@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' hide Path;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -24,7 +23,7 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  final MapController _mapCtrl = MapController();
+  GoogleMapController? _mapCtrl;
   LatLng _pinPosition = const LatLng(-17.8292, 31.0522); // Harare default
   String _address = 'Move map to select location';
   bool _loadingAddress = false;
@@ -69,7 +68,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         ),
       );
       final newPos = LatLng(pos.latitude, pos.longitude);
-      _mapCtrl.move(newPos, 15);
+      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(newPos, 15));
       setState(() {
         _pinPosition = newPos;
         _locatingUser = false;
@@ -80,18 +79,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     }
   }
 
-  void _onMapMoved(MapCamera cam, bool hasGesture) {
-    final center = cam.center;
-    setState(() {
-      _pinPosition = center;
-      _address = 'Searching…';
-    });
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 700), () {
-      _reverseGeocode(center);
-    });
-  }
-
+  // Replaced with inline onCameraMove
   Future<void> _reverseGeocode(LatLng pos) async {
     setState(() => _loadingAddress = true);
     try {
@@ -156,20 +144,26 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // ── MAP ────────────────────────────────────────────────────────────
-          FlutterMap(
-            mapController: _mapCtrl,
-            options: MapOptions(
-              initialCenter: _pinPosition,
-              initialZoom: 13,
-              onPositionChanged: _onMapMoved,
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: _pinPosition,
+              zoom: 13,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.sinasys.e_commerce_flutter',
-              ),
-            ],
+            onMapCreated: (controller) => _mapCtrl = controller,
+            onCameraMove: (position) {
+              setState(() {
+                _pinPosition = position.target;
+                _address = 'Searching…';
+              });
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 700), () {
+                _reverseGeocode(_pinPosition);
+              });
+            },
+            myLocationEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: false,
           ),
 
           // ── CENTRE PIN ─────────────────────────────────────────────────────
