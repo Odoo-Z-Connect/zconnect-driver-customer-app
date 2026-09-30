@@ -6,6 +6,7 @@ import '../../../shared/widgets/zc_widgets.dart';
 import '../../../features/shared/services/shipment_repository.dart';
 import '../../../features/shared/models/shipment.dart';
 import '../../../features/shared/models/enums.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ShipmentDetailScreen extends StatelessWidget {
   const ShipmentDetailScreen({super.key, required this.shipmentId});
@@ -88,30 +89,10 @@ class _ShipmentDetailView extends StatelessWidget {
                 _locationTile(context, 'Destination', shipment.destination,
                     AppColors.error, Icons.location_on_rounded),
                 const SizedBox(height: 12),
-                // Map placeholder
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGreen,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: AppColors.primaryGreen.withValues(alpha: 0.3)),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.map_rounded,
-                            size: 36, color: AppColors.primaryGreen),
-                        const SizedBox(height: 6),
-                        Text('Map view (demo placeholder)',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: AppColors.darkGreen)),
-                      ],
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                _StaticMapRoute(
+                  pickup: shipment.pickup,
+                  destination: shipment.destination,
                 ),
               ],
             ),
@@ -390,6 +371,91 @@ class _TimelineItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StaticMapRoute extends StatelessWidget {
+  const _StaticMapRoute({this.pickup, this.destination});
+  final AppLocation? pickup;
+  final AppLocation? destination;
+
+  LatLng _parseLatLng(String? id, LatLng fallback) {
+    if (id == null) return fallback;
+    final parts = id.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0]);
+      final lng = double.tryParse(parts[1]);
+      if (lat != null && lng != null) {
+        return LatLng(lat, lng);
+      }
+    }
+    return fallback;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Default to Harare for mock data without coordinates
+    final pu = _parseLatLng(pickup?.id, const LatLng(-17.8292, 31.0522));
+    final dest = _parseLatLng(destination?.id, const LatLng(-17.8000, 31.0800));
+
+    // Calculate bounds
+    LatLngBounds bounds;
+    if (pu.latitude > dest.latitude) {
+      bounds = LatLngBounds(southwest: dest, northeast: pu);
+    } else {
+      bounds = LatLngBounds(southwest: pu, northeast: dest);
+    }
+
+    return Container(
+      height: 140,
+      decoration: BoxDecoration(
+        color: AppColors.lightGreen,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryGreen.withValues(alpha: 0.3),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IgnorePointer(
+        ignoring: true,
+        child: GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: pu,
+            zoom: 12,
+          ),
+          onMapCreated: (controller) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 30));
+            });
+          },
+          markers: {
+            Marker(
+              markerId: const MarkerId('pickup'),
+              position: pu,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            ),
+            Marker(
+              markerId: const MarkerId('destination'),
+              position: dest,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            ),
+          },
+          polylines: {
+            Polyline(
+              polylineId: const PolylineId('route'),
+              points: [pu, dest],
+              color: AppColors.primaryGreen,
+              width: 3,
+              patterns: [PatternItem.dash(20), PatternItem.gap(20)],
+            ),
+          },
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          compassEnabled: false,
+          myLocationButtonEnabled: false,
+        ),
+      ),
     );
   }
 }
