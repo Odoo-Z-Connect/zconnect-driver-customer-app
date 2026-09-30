@@ -6,6 +6,22 @@ Welcome to the ZConnect Mobile App repository! This Flutter application serves t
 - **Customer App**: Allows users to sign up, book new parcel shipments (including location pin-drop), view shipment histories, and track current deliveries.
 - **Driver App**: Enables delivery personnel to view available or assigned jobs, manage delivery statuses (Pickup, In Transit, Delivered), and navigate to destinations via Google Maps.
 
+## Screenshots
+
+<div align="center">
+  <img src="screenshots/sign-in-choose.png" width="200" alt="Sign In Choose" />
+  <img src="screenshots/sign-in.png" width="200" alt="Sign In" />
+  <img src="screenshots/sign-in2.png" width="200" alt="Sign In Step 2" />
+  <img src="screenshots/customer-dash.png" width="200" alt="Customer Dashboard" />
+  <img src="screenshots/dash1.png" width="200" alt="Dashboard Variant" />
+  <img src="screenshots/parcel.png" width="200" alt="Parcel Request" />
+  <img src="screenshots/order.png" width="200" alt="Order Details" />
+  <img src="screenshots/history.png" width="200" alt="Order History" />
+  <img src="screenshots/profile.png" width="200" alt="Profile" />
+  <img src="screenshots/driver-orders.png" width="200" alt="Driver Orders" />
+  <img src="screenshots/google-maps-navigation.png" width="200" alt="Navigation" />
+</div>
+
 ## Implementation Status
 Currently, the app consists of a fully functional UI and state-management structure.
 - **Customer Workflow**: Location picking using OpenStreetMap, shipment creation, tracking history, and form validation are implemented.
